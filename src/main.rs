@@ -12,6 +12,7 @@ use store::Store;
 use args::YeeArgs;
 use log::{info, debug, error};
 
+/// Main entry point for the Yee-Haw file organization tool
 fn main() -> anyhow::Result<()> {
     pretty_env_logger::init();
     
@@ -46,18 +47,24 @@ fn main() -> anyhow::Result<()> {
         info!("Checking for duplicate files...");
         store.insert_batch(files);
         
-        info!("Found {} original files and {} duplicates", 
+        info!(
+            "Found {} original files and {} duplicates", 
             store.original_count(), 
-            store.duplicate_count());
+            store.duplicate_count()
+        );
         
         if args.dry {
             // In dry run mode, just show what would happen
-            info!("DRY RUN: Would move {} original files to their destination folders", 
-                store.original_count());
+            info!(
+                "DRY RUN: Would move {} original files to their destination folders", 
+                store.original_count()
+            );
             
             if store.duplicate_count() > 0 {
-                info!("DRY RUN: Would move {} duplicate files to the _dupes directory", 
-                    store.duplicate_count());
+                info!(
+                    "DRY RUN: Would move {} duplicate files to the _dupes directory", 
+                    store.duplicate_count()
+                );
             }
             
             debug!("Renaming style: {:?}, Group style: {:?}", 
@@ -68,25 +75,31 @@ fn main() -> anyhow::Result<()> {
             if sample_size > 0 {
                 debug!("Sample destination paths:");
                 for (i, file) in store.originals().iter().take(sample_size).enumerate() {
-                    debug!("  {}: {}/{}.{}", 
+                    debug!(
+                        "  {}: {}/{}.{}", 
                         i+1,
                         file.destination_full_path,
                         file.filename,
-                        file.extension);
+                        file.extension
+                    );
                 }
             }
             
             debug!("Duplicate files that would be skipped:");
             for file in store.duplicates() {
-                debug!("  {}.{} (hash: {})", 
+                debug!(
+                    "  {}.{} (hash: {})", 
                     file.filename,
                     file.extension,
-                    file.hash.as_deref().unwrap_or("none"));
+                    file.hash.as_deref().unwrap_or("none")
+                );
             }
         } else {
             // Actually move the files
-            info!("Moving {} original files to their destination folders", 
-                store.original_count());
+            info!(
+                "Moving {} original files to their destination folders", 
+                store.original_count()
+            );
             
             // Destination paths are already set by the meta processor
             mover.move_files(store.originals().to_vec())?;
@@ -101,8 +114,10 @@ fn main() -> anyhow::Result<()> {
         info!("Duplicate tracking disabled");
         
         if args.dry {
-            info!("DRY RUN: Would move {} files to their destination folders", 
-                files.len());
+            info!(
+                "DRY RUN: Would move {} files to their destination folders", 
+                files.len()
+            );
             
             debug!("Renaming style: {:?}, Group style: {:?}", 
                 args.rename_style, args.group_style);
@@ -112,16 +127,17 @@ fn main() -> anyhow::Result<()> {
             if sample_size > 0 {
                 debug!("Sample destination paths:");
                 for (i, file) in files.iter().take(sample_size).enumerate() {
-                    debug!("  {}: {}/{}.{}", 
+                    debug!(
+                        "  {}: {}/{}.{}", 
                         i+1,
                         file.destination_full_path,
                         file.filename,
-                        file.extension);
+                        file.extension
+                    );
                 }
             }
         } else {
-            info!("Moving {} files to their destination folders", 
-                files.len());
+            info!("Moving {} files to their destination folders", files.len());
             
             // Destination paths are already set by the meta processor
             mover.move_files(files)?;

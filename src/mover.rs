@@ -4,18 +4,24 @@ use log::{debug, info, warn};
 use crate::yee_file::YeeFile;
 use crate::args::YeeArgs;
 
-// Final stage in our file copier. Will move the files from their source to the destination.
-pub struct Mover{
+/// Final stage in the file processing pipeline.
+/// Responsible for moving files from their source to the destination.
+/// 
+/// If duplicate tracking is enabled, duplicates will be moved to a "_dupes" directory
+/// within the source directory while maintaining the destination directory structure.
+pub struct Mover {
     args: YeeArgs,
 }
 
-// All left over `YeeFiles` are moved from their source to the destination. 
-impl Mover{
-
-    pub fn new(args: YeeArgs) -> Self{
-        Self{ args }
+impl Mover {
+    /// Creates a new Mover instance
+    pub fn new(args: YeeArgs) -> Self {
+        Self { args }
     }
 
+    /// Moves the given files to their destination paths.
+    /// 
+    /// Each file's destination_full_path should already be set.
     pub fn move_files(&self, files: Vec<YeeFile>) -> anyhow::Result<()> {
         info!("Moving {} files to their destination", files.len());
         
@@ -27,6 +33,10 @@ impl Mover{
         Ok(())
     }
 
+    /// Moves duplicate files to the _dupes directory.
+    /// 
+    /// Duplicates are stored in source_dir/_dupes/ with the same folder structure
+    /// as the originals would have in the destination directory.
     pub fn move_duplicates(&self, duplicates: Vec<YeeFile>) -> anyhow::Result<()> {
         if duplicates.is_empty() {
             return Ok(());
@@ -42,6 +52,7 @@ impl Mover{
         Ok(())
     }
 
+    /// Moves a single file to its destination path
     fn move_single_file(&self, file: YeeFile) -> anyhow::Result<()> {
         let source_path = format!("{}/{}.{}", file.source_full_path, file.filename, file.extension);
         let destination_path = file.destination_full_path.clone();
@@ -62,6 +73,7 @@ impl Mover{
         Ok(())
     }
 
+    /// Moves a duplicate file to the _dupes directory
     fn move_duplicate_file(&self, file: YeeFile) -> anyhow::Result<()> {
         let source_path = format!("{}/{}.{}", file.source_full_path, file.filename, file.extension);
         

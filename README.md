@@ -9,6 +9,7 @@ Smart file wrangler for the terminal that helps organize and deduplicate files a
 - Organize files into groups based on their source directories
 - Multiple file renaming styles for the destination
 - Flexible folder grouping options
+- Intelligent duplicate handling - duplicates stored in _dupes directory
 - Dry run capability to preview actions without making changes
 
 ## Installation
@@ -40,6 +41,9 @@ yee-haw -s ~/Music -d ~/Sorted -q "*.mp3" --rename-style lowercase --group-style
 
 # Dry run to preview what would happen
 yee-haw -s ~/Documents -d ~/Backup -q "*.pdf" --dry
+
+# Handle duplicates by moving them to a _dupes directory
+yee-haw -s ~/Photos -d ~/Organized -q "*.jpg" --track-duplicates
 ```
 
 ## CLI Options
@@ -68,6 +72,16 @@ yee-haw -s ~/Documents -d ~/Backup -q "*.pdf" --dry
 
 - `short-hash`: Use short hash for destination folder names
 - `incremental`: Use incremental numbers for destination folder names
+
+## Duplicate Handling
+
+When duplicate files are detected (files with identical content):
+
+1. The first encountered file is considered the "original" and is moved to the destination directory
+2. Any duplicates are moved to a `_dupes` folder inside the source directory
+3. The duplicates maintain the same directory structure they would have had in the destination
+
+This allows you to easily identify and manage duplicate files while preserving their organizational context.
 
 ## Environment Variables
 
