@@ -11,3 +11,4 @@ log = "0.4.27"
 pretty_env_logger = "0.5.0"
 serde = { version = "1.0.210", features = ["derive"] }
 tiny_id = "0.1.6"
+xxhash-rust = { version = "0.8.7", features = ["xxh3"] }
