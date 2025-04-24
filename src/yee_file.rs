@@ -4,6 +4,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use log::{debug, trace};
 
+#[derive(Clone)]
 pub struct YeeFile{
     // Name of file without extension or path 
     pub filename: String,

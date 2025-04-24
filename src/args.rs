@@ -1,36 +1,58 @@
-use clap::{Parser, Subcommand};
+use clap::{Parser, ValueEnum};
 
 /// Smart file wrangler for the terminal
-#[derive(Parser)]
-#[command(author, version, about)]
+#[derive(Parser, Debug, Clone)]
+#[command(author, version, about, long_about = None)]
 pub struct YeeArgs {
     /// Source directory to scan
-    #[arg(short, long, default_value = "./", global = true)]
+    #[arg(short = 's', long, default_value = "./")]
     pub source_dir: String,
 
+    /// Query (glob pattern) to match files
+    #[arg(short = 'q', long, default_value = "*")]
+    pub query: String,
+
     /// Destination directory to move files to
-    #[arg(short, long, default_value = "./out", global = true)]
+    #[arg(short = 'd', long, default_value = "./out")]
     pub destination_dir: String,
 
-    /// File pattern to match (glob format)
-    #[arg(short, long, default_value = "*", global = true)]
-    pub pattern: String,
+    /// Perform a dry run (don't actually move files)
+    #[arg(long)]
+    pub dry: bool,
 
-    /// The operation to perform
-    #[command(subcommand)]
-    pub command: Option<Commands>,
+    /// Track and handle duplicates separately
+    #[arg(long, default_value_t = true)]
+    pub track_duplicates: bool,
+
+    /// File renaming style for destination
+    #[arg(long, value_enum, default_value_t = RenameStyle::None)]
+    pub rename_style: RenameStyle,
+
+    /// Grouping style for destination folders
+    #[arg(long, value_enum, default_value_t = GroupStyle::ShortHash)]
+    pub group_style: GroupStyle,
 }
 
-#[derive(Subcommand)]
-pub enum Commands {
-    /// Scan files in source directory matching pattern
-    Scan,
-    
-    /// Move files from source to destination
-    Move,
-    
-    /// Scan and immediately move files
-    All,
+#[derive(Copy, Clone, PartialEq, Eq, ValueEnum, Debug)]
+pub enum RenameStyle {
+    /// Keep original filenames
+    None,
+    /// Convert filenames to lowercase
+    Lowercase,
+    /// Add incremental numbers to filenames
+    Incremental,
+    /// Use short hash for filenames
+    ShortHash,
+    /// Combine original name with a hash
+    Combined,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, ValueEnum, Debug)]
+pub enum GroupStyle {
+    /// Use short hash for destination folder names
+    ShortHash,
+    /// Use incremental numbers for destination folder names
+    Incremental,
 }
 
 impl YeeArgs {
