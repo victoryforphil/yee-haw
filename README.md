@@ -10,6 +10,7 @@ Smart file wrangler for the terminal that helps organize and deduplicate files a
 - Multiple file renaming styles for the destination
 - Flexible folder grouping options
 - Intelligent duplicate handling - duplicates stored in _dupes directory
+- File metadata stored in YAML format for easy tracking and retrieval
 - Dry run capability to preview actions without making changes
 
 ## Installation
@@ -82,6 +83,22 @@ When duplicate files are detected (files with identical content):
 3. The duplicates maintain the same directory structure they would have had in the destination
 
 This allows you to easily identify and manage duplicate files while preserving their organizational context.
+
+## Metadata Storage
+
+Yee-Haw keeps track of file metadata using YAML files stored in a `.yeehaw` directory:
+
+1. The `.yeehaw` directory is created in each source folder containing processed files
+2. For each file, a corresponding YAML metadata file is created
+3. Group summary files collect information about related files
+
+This metadata can be useful for:
+- Tracking file origins and destinations
+- Identifying duplicate relationships
+- Providing an easily readable log of file operations
+- Supporting future operations on the same files
+
+The YAML files are human-readable and can be viewed with any text editor.
 
 ## Environment Variables
 

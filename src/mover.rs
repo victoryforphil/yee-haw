@@ -3,6 +3,8 @@ use std::path::Path;
 use log::{debug, info, warn};
 use crate::yee_file::YeeFile;
 use crate::args::YeeArgs;
+use std::collections::HashMap;
+use std::io::Write;
 
 /// Final stage in the file processing pipeline.
 /// Responsible for moving files from their source to the destination.
@@ -25,6 +27,21 @@ impl Mover {
     pub fn move_files(&self, files: Vec<YeeFile>) -> anyhow::Result<()> {
         info!("Moving {} files to their destination", files.len());
         
+        // Group files by group_id for metadata tracking
+        let mut grouped_files: HashMap<String, Vec<YeeFile>> = HashMap::new();
+        
+        for file in &files {
+            grouped_files
+                .entry(file.group_id.clone())
+                .or_insert_with(Vec::new)
+                .push(file.clone());
+        }
+        
+        // Create metadata for each group
+        for (group_id, group_files) in &grouped_files {
+            self.write_group_metadata(group_id, group_files)?;
+        }
+        
         for file in files {
             self.move_single_file(file)?;
         }
@@ -44,11 +61,93 @@ impl Mover {
 
         info!("Moving {} duplicate files to dupes directory", duplicates.len());
         
+        // Group duplicate files by group_id for metadata tracking
+        let mut grouped_dupes: HashMap<String, Vec<YeeFile>> = HashMap::new();
+        
+        for file in &duplicates {
+            grouped_dupes
+                .entry(file.group_id.clone())
+                .or_insert_with(Vec::new)
+                .push(file.clone());
+        }
+        
+        // Create metadata for duplicate groups
+        for (group_id, group_files) in &grouped_dupes {
+            self.write_group_metadata(group_id, group_files)?;
+        }
+        
         for file in duplicates {
             self.move_duplicate_file(file)?;
         }
         
         info!("Duplicate file moving complete");
+        Ok(())
+    }
+
+    /// Writes metadata for a group of files to a YAML file in the .yeehaw directory
+    fn write_group_metadata(&self, group_id: &str, files: &[YeeFile]) -> anyhow::Result<()> {
+        // Base path for the source directory
+        let source_root = Path::new(&self.args.source_dir);
+        
+        // Get the path to the group's first file to determine where to store metadata
+        if let Some(first_file) = files.first() {
+            // Create a .yeehaw directory in the source directory that contains the group
+            let group_path = if first_file.source_local_path.is_empty() {
+                source_root.to_path_buf()
+            } else {
+                source_root.join(&first_file.source_local_path)
+            };
+            
+            let yeehaw_dir = group_path.join(".yeehaw");
+            
+            // Create the .yeehaw directory if it doesn't exist
+            fs::create_dir_all(&yeehaw_dir)?;
+            
+            // Create a YAML file for each file's metadata
+            for file in files {
+                let metadata_filename = format!("{}_{}_{}.yaml", 
+                    group_id,
+                    file.filename, 
+                    file.extension);
+                let metadata_path = yeehaw_dir.join(metadata_filename);
+                
+                // Serialize the YeeFile to YAML
+                let yaml_content = serde_yaml::to_string(file)?;
+                
+                // Write the YAML content to a file
+                let mut file = fs::File::create(metadata_path)?;
+                file.write_all(yaml_content.as_bytes())?;
+                
+                debug!("Wrote metadata for {}.{} to YAML", file.filename, file.extension);
+            }
+            
+            // Write a group summary file
+            let group_summary_path = yeehaw_dir.join(format!("{}_summary.yaml", group_id));
+            
+            // Create a summary struct with group info
+            #[derive(serde::Serialize)]
+            struct GroupSummary {
+                group_id: String,
+                file_count: usize,
+                files: Vec<String>,
+            }
+            
+            let summary = GroupSummary {
+                group_id: group_id.to_string(),
+                file_count: files.len(),
+                files: files.iter()
+                    .map(|f| format!("{}.{}", f.filename, f.extension))
+                    .collect(),
+            };
+            
+            // Serialize and write the summary
+            let summary_yaml = serde_yaml::to_string(&summary)?;
+            let mut summary_file = fs::File::create(group_summary_path)?;
+            summary_file.write_all(summary_yaml.as_bytes())?;
+            
+            debug!("Wrote group summary for {} to YAML", group_id);
+        }
+        
         Ok(())
     }
 

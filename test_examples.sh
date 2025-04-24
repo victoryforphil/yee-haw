@@ -25,6 +25,21 @@ echo -e "\n=== Example 5: Actually move PDF files with duplicate handling ==="
 # This example will actually move files when the --dry flag is removed
 cargo run -- -s ./test_data -d ./output -q "*.pdf" --track-duplicates --rename-style combined --dry
 
+echo -e "\n=== Example 6: Process files and inspect the generated metadata ==="
+# Process files and then show the YAML metadata that's generated
+RUST_LOG=info cargo run -- -s ./test_data -d ./output -q "*.jpg" --track-duplicates
+
+echo -e "\n=== Inspecting the metadata YAML files ==="
+# Find all the YAML files that were created
+find ./test_data -name "*.yaml" | sort
+
+# Display the content of one metadata file (if any exist)
+YAML_FILE=$(find ./test_data -name "*.yaml" | head -n 1)
+if [ -n "$YAML_FILE" ]; then
+  echo -e "\n=== Contents of metadata file: $YAML_FILE ==="
+  cat "$YAML_FILE"
+fi
+
 echo -e "\n=== You can uncomment the line below to actually move files ==="
 # When ready to move files for real, use this command:
 # cargo run -- -s ./test_data -d ./output -q "*.pdf" --track-duplicates --rename-style combined
