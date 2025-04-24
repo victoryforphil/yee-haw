@@ -1,7 +1,13 @@
 [package]
-name = "victory-template"
+name = "yee-haw"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0.98"
+clap = { version = "4.5.37", features = ["derive"] }
+glob = "0.3.1"
+log = "0.4.27"
+pretty_env_logger = "0.5.0"
 serde = { version = "1.0.210", features = ["derive"] }
+tiny_id = "0.1.6"
