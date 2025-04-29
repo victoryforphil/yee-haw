@@ -55,14 +55,17 @@ fn main() -> anyhow::Result<()> {
         
         if args.dry {
             // In dry run mode, just show what would happen
+            let action = if args.copy_mode { "copy" } else { "move" };
             info!(
-                "DRY RUN: Would move {} original files to their destination folders", 
+                "DRY RUN: Would {} {} original files to their destination folders", 
+                action,
                 store.original_count()
             );
             
             if store.duplicate_count() > 0 {
                 info!(
-                    "DRY RUN: Would move {} duplicate files to the _dupes directory", 
+                    "DRY RUN: Would {} {} duplicate files to the _dupes directory", 
+                    action,
                     store.duplicate_count()
                 );
             }
@@ -95,27 +98,31 @@ fn main() -> anyhow::Result<()> {
                 );
             }
         } else {
-            // Actually move the files
+            // Actually move/copy the files
+            let action = if args.copy_mode { "Copying" } else { "Moving" };
             info!(
-                "Moving {} original files to their destination folders", 
+                "{} {} original files to their destination folders", 
+                action,
                 store.original_count()
             );
             
             // Destination paths are already set by the meta processor
             mover.move_files(store.originals().to_vec())?;
             
-            // Move duplicates to the _dupes directory
+            // Move/copy duplicates to the _dupes directory
             if store.duplicate_count() > 0 {
                 mover.move_duplicates(store.duplicates().to_vec())?;
             }
         }
     } else {
-        // No duplicate tracking, just move all files
+        // No duplicate tracking, just move/copy all files
         info!("Duplicate tracking disabled");
         
         if args.dry {
+            let action = if args.copy_mode { "copy" } else { "move" };
             info!(
-                "DRY RUN: Would move {} files to their destination folders", 
+                "DRY RUN: Would {} {} files to their destination folders", 
+                action,
                 files.len()
             );
             
@@ -137,7 +144,8 @@ fn main() -> anyhow::Result<()> {
                 }
             }
         } else {
-            info!("Moving {} files to their destination folders", files.len());
+            let action = if args.copy_mode { "Copying" } else { "Moving" };
+            info!("{} {} files to their destination folders", action, files.len());
             
             // Destination paths are already set by the meta processor
             mover.move_files(files)?;

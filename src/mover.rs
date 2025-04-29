@@ -7,10 +7,12 @@ use std::collections::HashMap;
 use std::io::Write;
 
 /// Final stage in the file processing pipeline.
-/// Responsible for moving files from their source to the destination.
+/// Responsible for moving or copying files from their source to the destination.
 /// 
 /// If duplicate tracking is enabled, duplicates will be moved to a "_dupes" directory
 /// within the source directory while maintaining the destination directory structure.
+/// 
+/// When copy_mode is enabled, files are copied instead of moved, preserving the originals.
 pub struct Mover {
     args: YeeArgs,
 }
@@ -21,11 +23,12 @@ impl Mover {
         Self { args }
     }
 
-    /// Moves the given files to their destination paths.
+    /// Moves or copies the given files to their destination paths based on copy_mode.
     /// 
     /// Each file's destination_full_path should already be set.
     pub fn move_files(&self, files: Vec<YeeFile>) -> anyhow::Result<()> {
-        info!("Moving {} files to their destination", files.len());
+        let action = if self.args.copy_mode { "Copying" } else { "Moving" };
+        info!("{} {} files to their destination", action, files.len());
         
         // Group files by group_id for metadata tracking
         let mut grouped_files: HashMap<String, Vec<YeeFile>> = HashMap::new();
@@ -43,14 +46,15 @@ impl Mover {
         }
         
         for file in files {
-            self.move_single_file(file)?;
+            self.process_single_file(file)?;
         }
         
-        info!("File moving complete");
+        let action_complete = if self.args.copy_mode { "File copying" } else { "File moving" };
+        info!("{} complete", action_complete);
         Ok(())
     }
 
-    /// Moves duplicate files to the _dupes directory.
+    /// Moves or copies duplicate files to the _dupes directory based on copy_mode.
     /// 
     /// Duplicates are stored in source_dir/_dupes/ with the same folder structure
     /// as the originals would have in the destination directory.
@@ -59,7 +63,8 @@ impl Mover {
             return Ok(());
         }
 
-        info!("Moving {} duplicate files to dupes directory", duplicates.len());
+        let action = if self.args.copy_mode { "Copying" } else { "Moving" };
+        info!("{} {} duplicate files to dupes directory", action, duplicates.len());
         
         // Group duplicate files by group_id for metadata tracking
         let mut grouped_dupes: HashMap<String, Vec<YeeFile>> = HashMap::new();
@@ -77,10 +82,11 @@ impl Mover {
         }
         
         for file in duplicates {
-            self.move_duplicate_file(file)?;
+            self.process_duplicate_file(file)?;
         }
         
-        info!("Duplicate file moving complete");
+        let action_complete = if self.args.copy_mode { "Duplicate file copying" } else { "Duplicate file moving" };
+        info!("{} complete", action_complete);
         Ok(())
     }
 
@@ -151,12 +157,13 @@ impl Mover {
         Ok(())
     }
 
-    /// Moves a single file to its destination path
-    fn move_single_file(&self, file: YeeFile) -> anyhow::Result<()> {
+    /// Processes a single file (either copy or move based on copy_mode)
+    fn process_single_file(&self, file: YeeFile) -> anyhow::Result<()> {
         let source_path = format!("{}/{}.{}", file.source_full_path, file.filename, file.extension);
         let destination_path = file.destination_full_path.clone();
         
-        debug!("Moving file from {} to {}", source_path, destination_path);
+        let action = if self.args.copy_mode { "Copying" } else { "Moving" };
+        debug!("{} file from {} to {}", action, source_path, destination_path);
         
         // Ensure the directory exists
         if let Some(parent) = Path::new(&destination_path).parent() {
@@ -165,15 +172,26 @@ impl Mover {
         
         // Copy the file
         match fs::copy(&source_path, &destination_path) {
-            Ok(_) => debug!("Successfully copied file to {}", destination_path),
+            Ok(_) => {
+                debug!("Successfully copied file to {}", destination_path);
+                
+                // If not in copy mode (i.e., move mode), delete the source file
+                if !self.args.copy_mode {
+                    if let Err(e) = fs::remove_file(&source_path) {
+                        warn!("Failed to delete source file {}: {}", source_path, e);
+                    } else {
+                        debug!("Deleted source file after move: {}", source_path);
+                    }
+                }
+            },
             Err(e) => warn!("Failed to copy file to {}: {}", destination_path, e),
         }
 
         Ok(())
     }
 
-    /// Moves a duplicate file to the _dupes directory
-    fn move_duplicate_file(&self, file: YeeFile) -> anyhow::Result<()> {
+    /// Processes a duplicate file (either copy or move based on copy_mode)
+    fn process_duplicate_file(&self, file: YeeFile) -> anyhow::Result<()> {
         let source_path = format!("{}/{}.{}", file.source_full_path, file.filename, file.extension);
         
         // Create a path for duplicates: source_dir/_dupes/[original_destination_structure]
@@ -192,7 +210,8 @@ impl Mover {
         let dupe_dest_path = dupes_dir.join(relative_dest_path);
         let dupe_dest_path_str = dupe_dest_path.to_string_lossy().to_string();
         
-        debug!("Moving duplicate file from {} to {}", source_path, dupe_dest_path_str);
+        let action = if self.args.copy_mode { "Copying" } else { "Moving" };
+        debug!("{} duplicate file from {} to {}", action, source_path, dupe_dest_path_str);
         
         // Ensure the directory exists
         if let Some(parent) = dupe_dest_path.parent() {
@@ -201,7 +220,18 @@ impl Mover {
         
         // Copy the file
         match fs::copy(&source_path, &dupe_dest_path) {
-            Ok(_) => debug!("Successfully copied duplicate file to {}", dupe_dest_path_str),
+            Ok(_) => {
+                debug!("Successfully copied duplicate file to {}", dupe_dest_path_str);
+                
+                // If not in copy mode (i.e., move mode), delete the source file
+                if !self.args.copy_mode {
+                    if let Err(e) = fs::remove_file(&source_path) {
+                        warn!("Failed to delete duplicate source file {}: {}", source_path, e);
+                    } else {
+                        debug!("Deleted source file after duplicate move: {}", source_path);
+                    }
+                }
+            },
             Err(e) => warn!("Failed to copy duplicate file to {}: {}", dupe_dest_path_str, e),
         }
 

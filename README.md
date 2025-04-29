@@ -9,6 +9,7 @@ Smart file wrangler for the terminal that helps organize and deduplicate files a
 - Organize files into groups based on their source directories
 - Multiple file renaming styles for the destination
 - Flexible folder grouping options
+- Copy mode to preserve source files while organizing them
 - Intelligent duplicate handling - duplicates stored in _dupes directory
 - File metadata stored in YAML format for easy tracking and retrieval
 - Dry run capability to preview actions without making changes
@@ -40,11 +41,17 @@ yee-haw -s ~/Photos -d ~/Organized -q "*.jpg"
 # Organize MP3 files with lowercase renaming and incremental grouping
 yee-haw -s ~/Music -d ~/Sorted -q "*.mp3" --rename-style lowercase --group-style incremental
 
+# Copy files instead of moving them (preserves source files)
+yee-haw -s ~/Documents -d ~/Backup -q "*.pdf" -c
+
 # Dry run to preview what would happen
 yee-haw -s ~/Documents -d ~/Backup -q "*.pdf" --dry
 
 # Handle duplicates by moving them to a _dupes directory
 yee-haw -s ~/Photos -d ~/Organized -q "*.jpg" --track-duplicates
+
+# Copy files and handle duplicates
+yee-haw -s ~/Photos -d ~/Organized -q "*.jpg" --track-duplicates -c
 ```
 
 ## CLI Options
@@ -54,6 +61,7 @@ yee-haw -s ~/Photos -d ~/Organized -q "*.jpg" --track-duplicates
 | `-s, --source-dir` | Source directory to scan | `./` |
 | `-q, --query` | Query (glob pattern) to match files | `*` |
 | `-d, --destination-dir` | Destination directory to move files to | `./out` |
+| `-c, --copy-mode` | Copy files instead of moving them | `false` |
 | `--dry` | Perform a dry run (don't actually move files) | `false` |
 | `--track-duplicates` | Track and handle duplicates separately | `true` |
 | `--rename-style` | File renaming style for destination | `none` |

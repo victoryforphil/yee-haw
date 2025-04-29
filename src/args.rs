@@ -31,6 +31,10 @@ pub struct YeeArgs {
     /// Grouping style for destination folders
     #[arg(long, value_enum, default_value_t = GroupStyle::ShortHash)]
     pub group_style: GroupStyle,
+    
+    /// Copy files instead of moving them
+    #[arg(short = 'c', long, default_value_t = false)]
+    pub copy_mode: bool,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, ValueEnum, Debug)]
