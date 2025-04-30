@@ -124,7 +124,7 @@ impl Mover {
                 let mut file = fs::File::create(metadata_path)?;
                 file.write_all(yaml_content.as_bytes())?;
                 
-                debug!("Wrote metadata for {}.{} to YAML", file.filename, file.extension);
+               
             }
             
             // Write a group summary file
@@ -160,7 +160,7 @@ impl Mover {
     /// Processes a single file (either copy or move based on copy_mode)
     fn process_single_file(&self, file: YeeFile) -> anyhow::Result<()> {
         let source_path = format!("{}/{}.{}", file.source_full_path, file.filename, file.extension);
-        let destination_path = file.destination_full_path.clone();
+        let destination_path = format!("{}/{}.{}", file.destination_full_path, file.filename, file.extension);
         
         let action = if self.args.copy_mode { "Copying" } else { "Moving" };
         debug!("{} file from {} to {}", action, source_path, destination_path);

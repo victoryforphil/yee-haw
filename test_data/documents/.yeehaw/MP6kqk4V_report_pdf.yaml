@@ -1,0 +1,8 @@
+filename: report
+extension: pdf
+source_full_path: ./test_data/documents
+destination_full_path: ./out/MP6kqk4V
+source_local_path: test_data/documents
+destination_local_path: MP6kqk4V
+hash: 2d06800538d394c2
+group_id: MP6kqk4V

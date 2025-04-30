@@ -1,0 +1,8 @@
+filename: report_duplicate
+extension: pdf
+source_full_path: ./test_data
+destination_full_path: ./out/Et7UWOlA
+source_local_path: test_data
+destination_local_path: Et7UWOlA
+hash: 2d06800538d394c2
+group_id: Et7UWOlA

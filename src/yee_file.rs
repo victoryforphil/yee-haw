@@ -1,7 +1,4 @@
 use std::path::Path;
-use tiny_id::ShortCodeGenerator;
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
 use log::{debug, trace};
 use serde::{Serialize, Deserialize};
 
@@ -57,10 +54,17 @@ impl YeeFile {
         let destination_full_path = String::new();
         let destination_local_path = String::new();
         
-        // Generate a short ID for the group_id based on the local path
-        let group_id = Self::generate_short_id(&source_local_path);
+        // Get the parent folder name for grouping
+        let parent_folder = Path::new(&source_full_path)
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("unknown");
         
-        trace!("Created YeeFile: {} with group_id: {}", file_name, group_id);
+        // Use parent folder name directly as group_id
+        let group_id = parent_folder.to_string();
+        
+        trace!("Created YeeFile: {} with group_id: {} (from folder: {})", 
+               file_name, group_id, parent_folder);
         
         Some(Self {
             filename: file_name,
@@ -72,26 +76,5 @@ impl YeeFile {
             hash: None,
             group_id,
         })
-    }
-
-    /// Generate a short ID based on the path string
-    fn generate_short_id(path: &str) -> String {
-        // Create a hash of the path
-        let mut hasher = DefaultHasher::new();
-        path.hash(&mut hasher);
-        let hash_value = hasher.finish();
-        
-        // Use the hash to seed a short code generator
-        // We'll generate 8-character alphanumeric codes
-        let mut generator = ShortCodeGenerator::new_alphanumeric(8);
-        
-        // Skip forward based on hash value to get a consistent ID for the same path
-        for _ in 0..hash_value % 1000 {
-            generator.next();
-        }
-        
-        let id = generator.next_string();
-        trace!("Generated group_id: {} for path: {}", id, path);
-        id
     }
 }

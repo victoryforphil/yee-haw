@@ -86,7 +86,8 @@ impl Meta {
     fn get_group_folder_name(&mut self, group_id: &str) -> String {
         match self.args.group_style {
             GroupStyle::ShortHash => {
-                // Use the existing group_id directly
+                // group_id now directly contains the parent folder name
+                // Use it as the destination folder name
                 group_id.to_string()
             },
             GroupStyle::Incremental => {
@@ -95,10 +96,14 @@ impl Meta {
                     // First time we've seen this group, assign it the next number
                     let next_counter = self.group_counters.len() + 1;
                     self.group_counters.insert(group_id.to_string(), next_counter);
+                    
+                    debug!("Assigning group number {} to group_id {}", next_counter, group_id);
                 }
                 
-                // Now get the counter value
+                // Now get the counter value for this group
                 let counter = self.group_counters.get(group_id).unwrap_or(&0);
+                
+                // Use incremental naming
                 format!("group_{:04}", counter)
             }
         }
