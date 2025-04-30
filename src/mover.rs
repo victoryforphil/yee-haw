@@ -6,11 +6,12 @@ use crate::args::YeeArgs;
 use std::collections::HashMap;
 use std::io::Write;
 
-/// Final stage in the file processing pipeline.
-/// Responsible for moving or copying files from their source to the destination.
+/// Final stage in our file processing pipeline. Takes the files that have been 
+/// fully processed and moves or copies them to their destination.
 /// 
+/// Also generates metadata YAML files in the destination's .yeehaw directories.
 /// If duplicate tracking is enabled, duplicates will be moved to a "_dupes" directory
-/// within the source directory while maintaining the destination directory structure.
+/// within the destination directory.
 /// 
 /// When copy_mode is enabled, files are copied instead of moved, preserving the originals.
 pub struct Mover {
@@ -56,7 +57,7 @@ impl Mover {
 
     /// Moves or copies duplicate files to the _dupes directory based on copy_mode.
     /// 
-    /// Duplicates are stored in source_dir/_dupes/ with the same folder structure
+    /// Duplicates are stored in destination_dir/_dupes/ with the same structure
     /// as the originals would have in the destination directory.
     pub fn move_duplicates(&self, duplicates: Vec<YeeFile>) -> anyhow::Result<()> {
         if duplicates.is_empty() {
@@ -92,16 +93,16 @@ impl Mover {
 
     /// Writes metadata for a group of files to a YAML file in the .yeehaw directory
     fn write_group_metadata(&self, group_id: &str, files: &[YeeFile]) -> anyhow::Result<()> {
-        // Base path for the source directory
-        let source_root = Path::new(&self.args.source_dir);
+        // Base path for the destination directory
+        let dest_root = Path::new(&self.args.destination_dir);
         
         // Get the path to the group's first file to determine where to store metadata
         if let Some(first_file) = files.first() {
-            // Create a .yeehaw directory in the source directory that contains the group
-            let group_path = if first_file.source_local_path.is_empty() {
-                source_root.to_path_buf()
+            // Create a .yeehaw directory in the destination directory that contains the group
+            let group_path = if first_file.destination_local_path.is_empty() {
+                dest_root.to_path_buf()
             } else {
-                source_root.join(&first_file.source_local_path)
+                dest_root.join(&first_file.destination_local_path)
             };
             
             let yeehaw_dir = group_path.join(".yeehaw");
@@ -123,8 +124,6 @@ impl Mover {
                 // Write the YAML content to a file
                 let mut file = fs::File::create(metadata_path)?;
                 file.write_all(yaml_content.as_bytes())?;
-                
-               
             }
             
             // Write a group summary file
@@ -151,7 +150,7 @@ impl Mover {
             let mut summary_file = fs::File::create(group_summary_path)?;
             summary_file.write_all(summary_yaml.as_bytes())?;
             
-            debug!("Wrote group summary for {} to YAML", group_id);
+            debug!("Wrote group summary for {} to YAML in {}", group_id, yeehaw_dir.display());
         }
         
         Ok(())
@@ -191,12 +190,15 @@ impl Mover {
     }
 
     /// Processes a duplicate file (either copy or move based on copy_mode)
+    /// 
+    /// Duplicates are stored in destination_dir/_dupes/ with the same structure
+    /// as the originals would have in the destination directory.
     fn process_duplicate_file(&self, file: YeeFile) -> anyhow::Result<()> {
         let source_path = format!("{}/{}.{}", file.source_full_path, file.filename, file.extension);
         
-        // Create a path for duplicates: source_dir/_dupes/[original_destination_structure]
-        let source_root = Path::new(&self.args.source_dir);
-        let dupes_dir = source_root.join("_dupes");
+        // Create a path for duplicates: destination_dir/_dupes/[original_destination_structure]
+        let dest_root = Path::new(&self.args.destination_dir);
+        let dupes_dir = dest_root.join("_dupes");
         
         // Keep the same destination layout but under the _dupes directory
         let relative_dest_path = if let Ok(rel_path) = Path::new(&file.destination_full_path)
